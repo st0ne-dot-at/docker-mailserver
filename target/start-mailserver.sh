@@ -212,6 +212,7 @@ fi
 # SSL Configuration
 case $SSL_TYPE in
   "letsencrypt" )
+    echo "letsencrypt"
     # letsencrypt folders and files mounted in /etc/letsencrypt
     if [ -e "/etc/letsencrypt/live/$(hostname)/cert.pem" ] \
     && [ -e "/etc/letsencrypt/live/$(hostname)/fullchain.pem" ]; then
