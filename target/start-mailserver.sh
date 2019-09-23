@@ -132,6 +132,7 @@ function register_functions() {
 	_register_setup_function "_setup_postfix_dhparam"
 	_register_setup_function "_setup_postfix_postscreen"
 	_register_setup_function "_setup_postfix_sizelimits"
+	_register_setup_function "_setup_postfix_header_checks"
 
   if [ "$SPOOF_PROTECTION" = 1  ]; then
 		_register_setup_function "_setup_spoof_protection"
@@ -749,6 +750,13 @@ function _setup_postfix_sizelimits() {
 	postconf -e "message_size_limit = ${DEFAULT_VARS["POSTFIX_MESSAGE_SIZE_LIMIT"]}"
 	notify 'inf' "Configuring postfix mailbox size limit"
 	postconf -e "mailbox_size_limit = ${DEFAULT_VARS["POSTFIX_MAILBOX_SIZE_LIMIT"]}"
+}
+
+function _setup_postfix_header_checks() {
+	notify 'inf' "Configuring postfix header_checks"
+        if [ -f /tmp/docker-mailserver/header_checks.pcre.cf ]; then
+		cp -f /tmp/docker-mailserver/header_checks.pcre.cf /etc/postfix/maps/header_checks.pcre
+        fi
 }
 
 function _setup_postfix_smtputf8() {
