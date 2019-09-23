@@ -146,6 +146,7 @@ function register_functions()
   _register_setup_function "_setup_postfix_dhparam"
   _register_setup_function "_setup_postfix_postscreen"
   _register_setup_function "_setup_postfix_sizelimits"
+  _register_setup_function "_setup_postfix_header_checks"
 
   [[ ${SPOOF_PROTECTION} -eq 1 ]] && _register_setup_function "_setup_spoof_protection"
 
@@ -856,6 +857,13 @@ function _setup_postfix_smtputf8()
 {
   _notify 'inf' "Configuring postfix smtputf8 support (disable)"
   postconf -e "smtputf8_enable = no"
+}
+
+function _setup_postfix_header_checks() {
+	notify 'inf' "Configuring postfix header_checks"
+        if [ -f /tmp/docker-mailserver/header_checks.pcre.cf ]; then
+		cp -f /tmp/docker-mailserver/header_checks.pcre.cf /etc/postfix/maps/header_checks.pcre
+        fi
 }
 
 function _setup_spoof_protection()
