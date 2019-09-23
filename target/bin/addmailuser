@@ -1,29 +1,41 @@
-#!/bin/bash
+#! /bin/bash
 
-DATABASE=/tmp/docker-mailserver/postfix-accounts.cf
+DATABASE=${DATABASE:-/tmp/docker-mailserver/postfix-accounts.cf}
 
-function usage {
-  echo 'Usage: addmailuser <user@domain.tld> [password]'
-  exit 1
+USER="$1"
+shift
+PASSWD="$@"
+
+usage() {
+	echo "Usage: addmailuser <user@domain> [<password>]"
 }
 
-if [ ! -z "$1" ]; then
-  USER=$1
-  if [ -e "$DATABASE" ] && [ ! -z "$(grep $USER -i $DATABASE)" ]; then
-    echo "User already exists"
-    exit 1
+errex() {
+	echo "$@" 1>&2
+	exit 1
+}
+
+escape() {
+	echo "${1//./\\.}"
+}
+
+[ -z "$USER" ] && { usage; errex "no username specified"; }
+expr index "$USER" "@" >/dev/null || { usage; errex "username must include the domain"; }
+
+# Protect config file with lock to avoid race conditions
+touch $DATABASE
+( 
+  flock -e 200
+
+  grep -qi "^$(escape "$USER")|" $DATABASE 2>/dev/null &&
+    errex "User \"$USER\" already exists"
+
+  if [ -z "$PASSWD" ]; then
+    read -s -p "Enter Password: " PASSWD
+    echo
+    [ -z "$PASSWD" ] && errex "Password must not be empty"
   fi
-  if [ ! -z "$2" ]; then
-    PASS="$2"
-  else
-    read -s -p "Enter Password: " PASS
-    if [ -z "$PASS" ]; then
-      echo "Password can't be empty"
-      exit 1
-    fi
-  fi
-  ENTRY=$(echo "$USER|$(doveadm pw -s SHA512-CRYPT -u "$USER" -p "$PASS")")
-  echo "$ENTRY" >> $DATABASE
-else
-  usage
-fi
+
+  HASH="$(doveadm pw -s SHA512-CRYPT -u "$USER" -p "$PASSWD")"
+  echo "$USER|$HASH" >> $DATABASE
+) 200<$DATABASE
